@@ -2,26 +2,29 @@
 
 package com.alibabacloud.cwchan
 
-import java.io.File
 import java.util.Date
 import java.util.Properties
 import java.util.Random
+
+import scala.Range
+
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.config.SslConfigs
+
 import com.typesafe.config.ConfigFactory
-import scala.Range
 
 object SparkKafkaPub extends App {
+
 
   def run(): Unit = {
 
     val events = 100;
     val rnd = new Random();
-    val config = ConfigFactory.parseFile(new File("./src/main/resources/application.conf")).getConfig("com.alibaba-inc.cwchan");
+    val config = ConfigFactory.load().getConfig("com.alibaba-inc.cwchan");
     val kafkaConfig = config.getConfig("Kafka");
     val bootstrapServers = kafkaConfig.getString("bootstrapServers");
     val groupId = kafkaConfig.getString("groupId");
@@ -32,13 +35,11 @@ object SparkKafkaPub extends App {
     val kafkaUsername = kafkaLoginConfig.getString("username"); ;
     val kafkaPassword = kafkaLoginConfig.getString("password"); ;
 
-    //    if (null == System.getProperty("java.security.auth.login.config")) {
-    //      System.setProperty("java.security.auth.login.config", "./src/main/resources/kafka_client_jaas.conf");
-    //    }
+    val jksStorePath = Utility.getJKSFile();
 
     val props = new Properties()
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-    props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, "./libs/kafka.client.truststore.jks");
+    props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, jksStorePath)
     props.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "KafkaOnsClient");
     props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
     props.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
@@ -50,7 +51,7 @@ object SparkKafkaPub extends App {
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
 
     val kafkaProducer = new KafkaProducer[String, String](props)
-
+    println("JKS Store Path: " + jksStorePath);
     println("running kafka publisher for " + topicName);
 
     for (nEvents <- Range(0, events)) {

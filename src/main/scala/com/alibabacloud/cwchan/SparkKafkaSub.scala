@@ -5,31 +5,28 @@ import com.typesafe.config.ConfigFactory
 import org.apache.spark.SparkConf
 import java.io.File
 
-
 object SparkKafkaSub {
 
   var bootstrapServers: String = null;
   var groupId: String = null;
   var topicName: String = null;
   var sparkSessoin: SparkSession = null;
-  
+
   var kafkaLoginModule: String = null;
   var kafkaUsername: String = null;
   var kafkaPassword: String = null;
-  var jassConfigEntity:String = null;
+  var jassConfigEntity: String = null;
+
+  var jksStorePath: String = null;
 
   def loadConfig(): SparkSession = {
-    
-//    if (null == System.getProperty("java.security.auth.login.config")) {
-//      System.setProperty("java.security.auth.login.config", "./src/main/resources/kafka_client_jaas.conf");
-//    }
 
-    val config = ConfigFactory.parseFile(new File("./src/main/resources/application.conf")).getConfig("com.alibaba-inc.cwchan");
+    val config = ConfigFactory.load().getConfig("com.alibaba-inc.cwchan");
     val kafkaConfig = config.getConfig("Kafka");
     bootstrapServers = kafkaConfig.getString("bootstrapServers");
     groupId = kafkaConfig.getString("groupId");
     topicName = kafkaConfig.getString("topicName");
-    
+
     val kafkaLoginConfig = config.getConfig("KafkaClientLogin");
     kafkaLoginModule = kafkaLoginConfig.getString("loginModule"); ;
     kafkaUsername = kafkaLoginConfig.getString("username"); ;
@@ -37,6 +34,8 @@ object SparkKafkaSub {
     jassConfigEntity = "org.apache.kafka.common.security.plain.PlainLoginModule required \n" +
       "        username=" + "\"" + kafkaUsername + "\" \n" +
       "        password=" + "\"" + kafkaPassword + "\";"
+
+    jksStorePath = Utility.getJKSFile();
 
     val sparkConf: SparkConf = new SparkConf()
       .setAppName("SparkKafkaSub")
@@ -56,6 +55,7 @@ object SparkKafkaSub {
 
     sparkSessoin = loadConfig()
 
+    println("JKS Store Path: " + jksStorePath);
     println("running kafka subscriber for " + topicName);
 
     val df = sparkSessoin
@@ -64,7 +64,7 @@ object SparkKafkaSub {
       .option("kafka.bootstrap.servers", bootstrapServers)
       .option("subscribe", topicName)
       .option("group.id", groupId)
-      .option("kafka.ssl.truststore.location", "./libs/kafka.client.truststore.jks")
+      .option("kafka.ssl.truststore.location", jksStorePath)
       .option("kafka.ssl.truststore.password", "KafkaOnsClient")
       .option("kafka.sasl.jaas.config", jassConfigEntity)
       .option("kafka.sasl.mechanism", "PLAIN")
