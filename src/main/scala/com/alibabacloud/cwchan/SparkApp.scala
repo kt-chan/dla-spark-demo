@@ -1,3 +1,8 @@
+package com.alibabacloud.cwchan
+
+import com.alibabacloud.cwchan.SparkKafkaSub
+import com.alibabacloud.cwchan.SparkKafkaPub
+
 object SparkApp {
 
   def main(args: Array[String]): Unit = {

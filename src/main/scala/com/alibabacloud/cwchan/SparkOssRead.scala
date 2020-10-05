@@ -1,9 +1,10 @@
 
 
+package com.alibabacloud.cwchan
+
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
-
 import com.typesafe.config.ConfigFactory
 
 object SparkReadOss {
