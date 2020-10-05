@@ -2,9 +2,7 @@ package com.alibabacloud.cwchan
 
 import java.io.File
 
-
 object SparkApp {
-
 
   def main(args: Array[String]): Unit = {
 
@@ -22,9 +20,15 @@ object SparkApp {
       }
     }
 
-//    threadSub.start
-//    Thread.sleep(5000)
-    threadPub.start
+    if (args == null || args.length == 0) {
+      threadSub.start
+      Thread.sleep(5000)
+      threadPub.start
+    }
 
+    if (args.length == 1) {
+      if (args(0).equalsIgnoreCase("sub")) threadSub.start
+      if (args(0).equalsIgnoreCase("pub"))threadPub.start
+    }
   }
 }
