@@ -12,7 +12,6 @@ src/main/resources/application.conf
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.nar
 *.ear
