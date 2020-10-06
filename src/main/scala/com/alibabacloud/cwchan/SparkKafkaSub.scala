@@ -39,13 +39,14 @@ object SparkKafkaSub {
 
     val sparkConf: SparkConf = new SparkConf()
       .setAppName("SparkKafkaSub")
-      .setMaster("local[4]")
+//      .setMaster("yarn-client")
+//      .setMaster("local[4]")
+      
 
     //SparkContext
     sparkSessoin = SparkSession
       .builder()
       .config(sparkConf)
-      .master("local[4]")
       .getOrCreate()
 
     return sparkSessoin
