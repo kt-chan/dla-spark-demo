@@ -17,9 +17,9 @@ object SparkKafkaSub {
   var kafkaPassword: String = null;
   var jassConfigEntity: String = null;
 
-  var jksStorePath: String = null;
+//  var jksStorePath: String = null;
 
-  def loadConfig(): SparkSession = {
+  def loadConfig(debugMode: Boolean): SparkSession = {
 
     val config = ConfigFactory.load().getConfig("com.alibaba-inc.cwchan");
     val kafkaConfig = config.getConfig("Kafka");
@@ -27,21 +27,21 @@ object SparkKafkaSub {
     groupId = kafkaConfig.getString("groupId");
     topicName = kafkaConfig.getString("topicName");
 
-    val kafkaLoginConfig = config.getConfig("KafkaClientLogin");
-    kafkaLoginModule = kafkaLoginConfig.getString("loginModule"); ;
-    kafkaUsername = kafkaLoginConfig.getString("username"); ;
-    kafkaPassword = kafkaLoginConfig.getString("password"); ;
-    jassConfigEntity = "org.apache.kafka.common.security.plain.PlainLoginModule required \n" +
-      "        username=" + "\"" + kafkaUsername + "\" \n" +
-      "        password=" + "\"" + kafkaPassword + "\";"
+//    val kafkaLoginConfig = config.getConfig("KafkaClientLogin");
+//    kafkaLoginModule = kafkaLoginConfig.getString("loginModule"); ;
+//    kafkaUsername = kafkaLoginConfig.getString("username"); ;
+//    kafkaPassword = kafkaLoginConfig.getString("password"); ;
+//    jassConfigEntity = "org.apache.kafka.common.security.plain.PlainLoginModule required \n" +
+//      "        username=" + "\"" + kafkaUsername + "\" \n" +
+//      "        password=" + "\"" + kafkaPassword + "\";"
+//
+//    jksStorePath = Utility.getJKSFile();
 
-    jksStorePath = Utility.getJKSFile();
-
-    val sparkConf: SparkConf = new SparkConf()
-      .setAppName("SparkKafkaSub")
-//      .setMaster("yarn-client")
-//      .setMaster("local[4]")
-      
+    val sparkConf: SparkConf = new SparkConf();
+    sparkConf.setAppName("SparkKafkaSub")
+    if(debugMode){      
+      sparkConf.setMaster("local[4]")
+    } 
 
     //SparkContext
     sparkSessoin = SparkSession
@@ -53,10 +53,14 @@ object SparkKafkaSub {
   }
 
   def run(): Unit = {
+    this.run(false);
+  }
 
-    sparkSessoin = loadConfig()
+  def run(debugMode: Boolean): Unit = {
 
-    println("JKS Store Path: " + jksStorePath);
+    sparkSessoin = loadConfig(debugMode)
+
+//    println("JKS Store Path: " + jksStorePath);
     println("running kafka subscriber for " + topicName);
 
     val df = sparkSessoin
@@ -65,11 +69,12 @@ object SparkKafkaSub {
       .option("kafka.bootstrap.servers", bootstrapServers)
       .option("subscribe", topicName)
       .option("group.id", groupId)
-      .option("kafka.ssl.truststore.location", jksStorePath)
-      .option("kafka.ssl.truststore.password", "KafkaOnsClient")
-      .option("kafka.sasl.jaas.config", jassConfigEntity)
-      .option("kafka.sasl.mechanism", "PLAIN")
-      .option("kafka.security.protocol", "SASL_SSL")
+      //  //Below for SSL Connection Only
+      //      .option("kafka.ssl.truststore.location", jksStorePath)
+      //      .option("kafka.ssl.truststore.password", "KafkaOnsClient")
+      //      .option("kafka.sasl.jaas.config", jassConfigEntity)
+      //      .option("kafka.sasl.mechanism", "PLAIN")
+      //      .option("kafka.security.protocol", "SASL_SSL")
       .load()
 
     val query = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
