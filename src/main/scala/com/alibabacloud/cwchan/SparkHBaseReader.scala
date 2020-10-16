@@ -24,7 +24,7 @@ object SparkHBaseReader extends App {
     zookeeperQuorum = phoenixConfig.getString("zookeeper");
     phoenixConnection = phoenixConfig.getString("connection");
 
-    println("running HBaseWriter for " + phoenixConnection);
+    println("running HBaseReader for " + phoenixConnection);
 
     return SparkApp.sparkSessoin
   }
@@ -45,7 +45,7 @@ object SparkHBaseReader extends App {
       val key = Bytes.toString(result.getRow)
       val name = Bytes.toString(result.getValue("PERSONAL".getBytes,"NAME".getBytes))
       val age = Bytes.toString(result.getValue("PROFESSIONAL".getBytes,"NAME".getBytes))
-      println("Row key:"+key+"\tPERSONAL.Name:"+name+"\tPROFESSIONAL.NAME:"+age)
+      println("Row key:"+key+"\tPERSONAL.NAME:"+name+"\tPROFESSIONAL.NAME:"+age)
     }
   }
 
