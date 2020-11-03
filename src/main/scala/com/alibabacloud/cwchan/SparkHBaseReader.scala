@@ -19,12 +19,8 @@ object SparkHBaseReader extends App {
 
     val config = ConfigFactory.load().getConfig("com.alibaba-inc.cwchan");
     val phoenixConfig = config.getConfig("Phoenix");
-    val hostname = phoenixConfig.getString("hostname");
     val port = phoenixConfig.getString("port");
     zookeeperQuorum = phoenixConfig.getString("zookeeper");
-    phoenixConnection = phoenixConfig.getString("connection");
-
-    println("running HBaseReader for " + phoenixConnection);
 
     return SparkApp.sparkSessoin
   }
@@ -37,15 +33,17 @@ object SparkHBaseReader extends App {
     hbaseConf.set("hbase.zookeeper.quorum", zookeeperQuorum)
     hbaseConf.set(TableInputFormat.INPUT_TABLE, "USER_TEST:EMP")
 
+    println("running hbase reader for " + hbaseConf.get(TableInputFormat.INPUT_TABLE));
+    
     val hBaseRDD = sparkSession.sparkContext.newAPIHadoopRDD(hbaseConf, classOf[TableInputFormat],
       classOf[ImmutableBytesWritable],
       classOf[Result])
 
     hBaseRDD.foreach{ case (_ ,result) =>
       val key = Bytes.toString(result.getRow)
-      val name = Bytes.toString(result.getValue("PERSONAL".getBytes,"NAME".getBytes))
-      val age = Bytes.toString(result.getValue("PROFESSIONAL".getBytes,"NAME".getBytes))
-      println("Row key:"+key+"\tPERSONAL.NAME:"+name+"\tPROFESSIONAL.NAME:"+age)
+      val name = Bytes.toString(result.getValue("personal".getBytes,"name".getBytes))
+      val age = Bytes.toString(result.getValue("personal".getBytes,"registerts".getBytes))
+      println("Rowkey:"+key+"\tpersonal.name:"+name+"\tpersonal.registerts:"+age)
     }
   }
 
