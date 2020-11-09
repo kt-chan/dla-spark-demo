@@ -43,19 +43,20 @@ object SparkApp {
       }
     }
 
-    val threadRSQL = new Thread {
-      override def run {
-        // your custom behavior here
-        com.alibabacloud.cwchan.SparkHBaseReader.run();
-      }
-    }
+//    val threadRSQL = new Thread {
+//      override def run {
+//        // your custom behavior here
+//        com.alibabacloud.cwchan.SparkHBaseReader.run();
+//      }
+//    }
 
-    val threadWSQL = new Thread {
-      override def run {
-        // your custom behavior here
-        com.alibabacloud.cwchan.SparkHBaseWriter.run();
-      }
-    }
+//    val threadWSQL = new Thread {
+//      override def run {
+//        // your custom behavior here
+//        com.alibabacloud.cwchan.SparkHBaseWriter.setup();
+//        com.alibabacloud.cwchan.SparkHBaseWriter.run();
+//      }
+//    }
 
     if (args == null || args.length == 0) {
       threadSub.start
@@ -66,8 +67,8 @@ object SparkApp {
     if (args.length == 1) {
       if (args(0).equalsIgnoreCase("sub")) threadSub.start
       if (args(0).equalsIgnoreCase("pub")) threadPub.start
-      if (args(0).equalsIgnoreCase("rsql")) threadRSQL.start
-      if (args(0).equalsIgnoreCase("wsql")) threadWSQL.start
+//      if (args(0).equalsIgnoreCase("rsql")) threadRSQL.start
+//      if (args(0).equalsIgnoreCase("wsql")) threadWSQL.start
     }
   }
 }

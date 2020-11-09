@@ -1,28 +1,29 @@
 package com.alibabacloud.cwchan
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
-import scala.collection.mutable.ArrayBuffer
+import java.io.IOException
 
 import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.HColumnDescriptor
-import org.apache.hadoop.hbase.HTableDescriptor
+import org.apache.hadoop.hbase.NamespaceDescriptor
 import org.apache.hadoop.hbase.TableName
+import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder
+import org.apache.hadoop.hbase.client.Connection
 import org.apache.hadoop.hbase.client.ConnectionFactory
 import org.apache.hadoop.hbase.client.Put
-import org.apache.hadoop.hbase.client.Result
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
+import org.apache.hadoop.hbase.client.Table
+import org.apache.hadoop.hbase.client.TableDescriptorBuilder
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.mapreduce.Job
+import org.apache.spark.sql.ForeachWriter
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 
 import com.typesafe.config.ConfigFactory
 
-object SparkHBaseWriter extends App {
+class SparkHBaseWriter extends ForeachWriter[Row] {
 
-  var sparkSessoin: SparkSession = null;
+  var sparkSessoin: SparkSession = null
+  var hbaseTable: Table = null;
+  var hbaseConn: Connection = null;
   var phoenixConnection: String = null;
   var zookeeperQuorum: String = null;
 
@@ -32,56 +33,64 @@ object SparkHBaseWriter extends App {
     val phoenixConfig = config.getConfig("Phoenix");
     val port = phoenixConfig.getString("port");
     zookeeperQuorum = phoenixConfig.getString("zookeeper");
-    return SparkApp.sparkSessoin
+    return SparkApp.sparkSessoin;
   }
 
-  def run(): Unit = {
-
-    var sparkSession = loadConfig();
-
-    
-
-    val hbaseConf = HBaseConfiguration.create()
-    hbaseConf.set("hbase.zookeeper.quorum", zookeeperQuorum)
-    hbaseConf.set(TableOutputFormat.OUTPUT_TABLE, "USER_TEST:EMP")
-    val conn = ConnectionFactory.createConnection(hbaseConf)
-    val admin = conn.getAdmin
+  def setupHBaseJob(): Table = {
+    val hbaseConf = HBaseConfiguration.create();
+    hbaseConf.set("hbase.zookeeper.quorum", zookeeperQuorum);
+    hbaseConf.set(TableOutputFormat.OUTPUT_TABLE, "USER_TEST:EMP");
+    hbaseConn = ConnectionFactory.createConnection(hbaseConf);
+    val admin = hbaseConn.getAdmin();
 
     println("running hbase writer for " + hbaseConf.get(TableOutputFormat.OUTPUT_TABLE));
-    
-    val tableDescr = new HTableDescriptor(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)))
-    tableDescr.addFamily(new HColumnDescriptor("personal".getBytes))
 
-    //    if (admin.tableExists(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)))) {
-    //      admin.disableTable(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)));
-    //      admin.deleteTable(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)));
-    //    }
+    var listNamespaceDescriptor: NamespaceDescriptor = null;
+    try {
+      listNamespaceDescriptor = admin.getNamespaceDescriptor("USER_TEST")
+    } catch {
+      case e: IOException =>
+        {
+          println("Namespace: \"USER_TEST\" doesnot exist, creating one ...")
+          admin.createNamespace(NamespaceDescriptor.create("USER_TEST").build());
+        };
+    }
+
+    val tableDescr = TableDescriptorBuilder.newBuilder(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)))
+    tableDescr.setColumnFamily(ColumnFamilyDescriptorBuilder.newBuilder("personal".getBytes).build());
 
     if (!admin.tableExists(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)))) {
-      admin.createTable(tableDescr)
+      admin.createTable(tableDescr.build());
     }
 
-    val job = new Job(hbaseConf)
-    job.setOutputKeyClass(classOf[ImmutableBytesWritable])
-    job.setOutputValueClass(classOf[Result])
-    job.setOutputFormatClass(classOf[TableOutputFormat[ImmutableBytesWritable]])
-
-    val dataArray = ArrayBuffer[String]();
-    for (a <- 1 to 10) {
-      dataArray += a + ",chiwai.chan," + LocalDateTime.now.format(DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss"))
-    }
-
-    val indataRDD = sparkSession.sparkContext.makeRDD(dataArray)
-
-    val rdd = indataRDD.map(_.split(',')).map { arr =>
-      val put = new Put(Bytes.toBytes(arr(0)));
-      put.addColumn(Bytes.toBytes("personal"), Bytes.toBytes("name"), Bytes.toBytes(arr(1)))
-      put.addColumn(Bytes.toBytes("personal"), Bytes.toBytes("registerts"), Bytes.toBytes(arr(2)))
-      (new ImmutableBytesWritable, put)
-    }
-    rdd.saveAsNewAPIHadoopDataset(job.getConfiguration())
-
-    sparkSession.close();
+    return hbaseConn.getTable(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)));
   }
 
+  override def open(partitionId: Long, version: Long): Boolean = {
+    this.sparkSessoin = loadConfig();
+    this.hbaseTable = setupHBaseJob();
+    return true;
+
+  }
+
+  override def close(errorOrNull: Throwable): Unit = {
+    try {
+      hbaseTable.close();
+      hbaseConn.close();
+    } catch {
+      case e: IOException => println(e.printStackTrace())
+    }
+  }
+
+  override def process(record: Row): Unit = {
+
+    println("input data in row is: " + record.toString());
+    val rowkey = record.getString(0).split(",");
+    val rowval = record.getString(1).split(",");
+
+    val put = new Put(Bytes.toBytes(rowkey(0)));
+    put.addColumn(Bytes.toBytes("personal"), Bytes.toBytes("name"), Bytes.toBytes(rowval(0)));
+    put.addColumn(Bytes.toBytes("personal"), Bytes.toBytes("registerts"), Bytes.toBytes(rowval(1)));
+    this.hbaseTable.put(put);
+  }
 }

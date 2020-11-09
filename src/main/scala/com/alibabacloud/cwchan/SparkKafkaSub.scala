@@ -37,15 +37,18 @@ object SparkKafkaSub {
       .option("kafka.bootstrap.servers", bootstrapServers)
       .option("subscribe", topicName)
       .option("group.id", groupId)
-      .load()
+      .load();
+
+    //    val query = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+    //      .writeStream
+    //      .outputMode("append")
+    //      .format("console")
+    //      .start()
 
     val query = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-      .writeStream
-      .outputMode("append")
-      .format("console")
+      .writeStream.foreach(new SparkHBaseWriter)
       .start()
-
-    query.awaitTermination()
+      .awaitTermination();
 
   }
 

@@ -48,7 +48,7 @@ object SparkKafkaPub extends App {
     for (nEvents <- Range(0, events)) {
       val runtime = new Date().getTime()
       val ip = "192.168.2." + rnd.nextInt(255)
-      val msg = runtime + "," + nEvents + ",www.helloworld.com," + ip
+      val msg =  "www.helloworld.com," + runtime;
       val data = new ProducerRecord[String, String](topicName, ip, msg)
 
       // println("sending to topic: " + data.topic() + "; data: " + data.value())
