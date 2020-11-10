@@ -1,5 +1,7 @@
 package com.alibabacloud.cwchan
 
+import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 
 import com.typesafe.config.ConfigFactory
@@ -29,25 +31,42 @@ object SparkKafkaSub {
 
   def run(): Unit = {
 
-    val sparkSessoin = loadConfig();
+    val sparkSession = loadConfig();
 
-    val df = sparkSessoin
+    val dfStatic = sparkSession
+      .read
+      .format("jdbc")
+      .option("url", "jdbc:postgresql://gp-3ns887x3g7nxa3d4eo.gpdb.rds.aliyuncs.com:3432/sku")
+      .option("dbtable", "public.hsistock")
+      .option("user", "cwchan")
+      .option("password", "@liP@ssw0rd")
+      .option("driver", "org.postgresql.Driver")
+      .load()
+      .selectExpr("symbol as Symbol", "`Company Name` as CompanyName", "`Last Price` as LastPrice", "volume as Volume")
+
+    val dfStream = sparkSession
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", bootstrapServers)
       .option("subscribe", topicName)
       .option("group.id", groupId)
-      .load();
+      .load()
+      .selectExpr("CAST(key AS STRING) as SourceIP", "split(value, ',')[0] as StockCode", "split(value, ',')[1] as TS")
 
-    //    val query = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-    //      .writeStream
-    //      .outputMode("append")
-    //      .format("console")
-    //      .start()
+    val dfJoin = dfStream
+      .join(dfStatic, dfStream("StockCode") === dfStatic("Symbol"), "leftouter")
+      .selectExpr("SourceIP", "StockCode", "CompanyName", "LastPrice", "TS")
 
-    val query = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-      .writeStream.foreach(new SparkHBaseWriter)
-      .start()
+    val query = dfJoin
+      .writeStream
+      .foreachBatch { (output: Dataset[Row], batchId: Long) => 
+        SparkHBaseWriter.open();
+        for (r <- output.collect()) {
+          SparkHBaseWriter.process(r);
+        }
+        SparkHBaseWriter.close();
+      }
+      .start
       .awaitTermination();
 
   }

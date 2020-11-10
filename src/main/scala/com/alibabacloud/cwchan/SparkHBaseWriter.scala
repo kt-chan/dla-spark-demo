@@ -1,6 +1,8 @@
 package com.alibabacloud.cwchan
 
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.NamespaceDescriptor
@@ -13,19 +15,19 @@ import org.apache.hadoop.hbase.client.Table
 import org.apache.hadoop.hbase.client.TableDescriptorBuilder
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.spark.sql.ForeachWriter
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 
 import com.typesafe.config.ConfigFactory
 
-class SparkHBaseWriter extends ForeachWriter[Row] {
+object SparkHBaseWriter {
 
   var sparkSessoin: SparkSession = null
   var hbaseTable: Table = null;
   var hbaseConn: Connection = null;
   var phoenixConnection: String = null;
   var zookeeperQuorum: String = null;
+  var dateFormater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
   def loadConfig(): SparkSession = {
 
@@ -39,11 +41,9 @@ class SparkHBaseWriter extends ForeachWriter[Row] {
   def setupHBaseJob(): Table = {
     val hbaseConf = HBaseConfiguration.create();
     hbaseConf.set("hbase.zookeeper.quorum", zookeeperQuorum);
-    hbaseConf.set(TableOutputFormat.OUTPUT_TABLE, "USER_TEST:EMP");
+    hbaseConf.set(TableOutputFormat.OUTPUT_TABLE, "USER_TEST:STOCK");
     hbaseConn = ConnectionFactory.createConnection(hbaseConf);
     val admin = hbaseConn.getAdmin();
-
-    println("running hbase writer for " + hbaseConf.get(TableOutputFormat.OUTPUT_TABLE));
 
     var listNamespaceDescriptor: NamespaceDescriptor = null;
     try {
@@ -57,7 +57,7 @@ class SparkHBaseWriter extends ForeachWriter[Row] {
     }
 
     val tableDescr = TableDescriptorBuilder.newBuilder(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)))
-    tableDescr.setColumnFamily(ColumnFamilyDescriptorBuilder.newBuilder("personal".getBytes).build());
+    tableDescr.setColumnFamily(ColumnFamilyDescriptorBuilder.newBuilder("org".getBytes).build());
 
     if (!admin.tableExists(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)))) {
       admin.createTable(tableDescr.build());
@@ -66,31 +66,44 @@ class SparkHBaseWriter extends ForeachWriter[Row] {
     return hbaseConn.getTable(TableName.valueOf(hbaseConf.get(TableOutputFormat.OUTPUT_TABLE)));
   }
 
-  override def open(partitionId: Long, version: Long): Boolean = {
-    this.sparkSessoin = loadConfig();
-    this.hbaseTable = setupHBaseJob();
+  def open(): Boolean = {
+    println("Open connection to HBase");
+    try {
+      this.sparkSessoin = loadConfig();
+      this.hbaseTable = setupHBaseJob();
+    } catch {
+      case e: Throwable => println(e.printStackTrace())
+    }
+
     return true;
 
   }
 
-  override def close(errorOrNull: Throwable): Unit = {
+  def close(): Unit = {
+    println("Close connection to HBase");
     try {
       hbaseTable.close();
       hbaseConn.close();
     } catch {
-      case e: IOException => println(e.printStackTrace())
+      case e: Throwable => println(e.printStackTrace())
     }
   }
 
-  override def process(record: Row): Unit = {
-
+  def process(record: Row): Unit = {
     println("input data in row is: " + record.toString());
-    val rowkey = record.getString(0).split(",");
-    val rowval = record.getString(1).split(",");
 
-    val put = new Put(Bytes.toBytes(rowkey(0)));
-    put.addColumn(Bytes.toBytes("personal"), Bytes.toBytes("name"), Bytes.toBytes(rowval(0)));
-    put.addColumn(Bytes.toBytes("personal"), Bytes.toBytes("registerts"), Bytes.toBytes(rowval(1)));
+    val rowkey = record.getString(0);
+    val stockCode = record.getString(1);
+    val companyName = record.getString(2);
+    val lastPrice = record.getDecimal(3).toString();
+    val ts = dateFormater.format(new Date(record.getString(4).toLong)).toString()
+    
+
+    val put = new Put(Bytes.toBytes(rowkey));
+    put.addColumn(Bytes.toBytes("org"), Bytes.toBytes("stock_code"), Bytes.toBytes(stockCode));
+    put.addColumn(Bytes.toBytes("org"), Bytes.toBytes("stock_name"), Bytes.toBytes(companyName));
+    put.addColumn(Bytes.toBytes("org"), Bytes.toBytes("last_price"), Bytes.toBytes(lastPrice));
+    put.addColumn(Bytes.toBytes("org"), Bytes.toBytes("timestamp"), Bytes.toBytes(ts));
     this.hbaseTable.put(put);
   }
 }

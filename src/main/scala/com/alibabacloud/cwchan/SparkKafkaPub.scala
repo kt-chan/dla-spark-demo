@@ -40,7 +40,7 @@ object SparkKafkaPub extends App {
 
     val props = loadConfig();
 
-    val events = 100;
+    val events = 1000;
     val rnd = new Random();
 
     val kafkaProducer = new KafkaProducer[String, String](props)
@@ -48,7 +48,7 @@ object SparkKafkaPub extends App {
     for (nEvents <- Range(0, events)) {
       val runtime = new Date().getTime()
       val ip = "192.168.2." + rnd.nextInt(255)
-      val msg =  "www.helloworld.com," + runtime;
+      val msg =  SKUs.HSIStocks(rnd.nextInt(SKUs.HSIStocks.length-1)) + "," + runtime;
       val data = new ProducerRecord[String, String](topicName, ip, msg)
 
       // println("sending to topic: " + data.topic() + "; data: " + data.value())
