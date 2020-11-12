@@ -43,19 +43,30 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.mongodb.spark</groupId>
+			<artifactId>mongo-spark-connector_${scala.compat.version}</artifactId>
+			<version>2.4.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongo-java-driver</artifactId>
+			<version>3.12.7</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>42.2.10</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-mllib_2.11</artifactId>
+			<artifactId>spark-mllib_${scala.compat.version}</artifactId>
 			<version>${spark.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-sql-kafka-0-10_2.11</artifactId>
+			<artifactId>spark-sql-kafka-0-10_${scala.compat.version}</artifactId>
 			<version>${spark.version}</version>
 		</dependency>
 		<dependency>

@@ -95,7 +95,7 @@ object SparkHBaseWriter {
     val rowkey = record.getString(0);
     val stockCode = record.getString(1);
     val companyName = record.getString(2);
-    val lastPrice = record.getDecimal(3).toString();
+    val lastPrice = record.getDouble(3).toString();
     val ts = dateFormater.format(new Date(record.getString(4).toLong)).toString()
     
 

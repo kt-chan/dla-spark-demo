@@ -4,6 +4,7 @@ import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 
+import com.mongodb.spark.MongoSpark
 import com.typesafe.config.ConfigFactory
 
 object SparkKafkaSub {
@@ -29,21 +30,14 @@ object SparkKafkaSub {
     return SparkApp.sparkSessoin;
   }
 
+
   def run(): Unit = {
 
     val sparkSession = loadConfig();
 
-    val dfStatic = sparkSession
-      .read
-      .format("jdbc")
-      .option("url", "jdbc:postgresql://gp-3ns887x3g7nxa3d4eo.gpdb.rds.aliyuncs.com:3432/sku")
-      .option("dbtable", "public.hsistock")
-      .option("user", "cwchan")
-      .option("password", "@liP@ssw0rd")
-      .option("driver", "org.postgresql.Driver")
-      .load()
-      .selectExpr("symbol as Symbol", "`Company Name` as CompanyName", "`Last Price` as LastPrice", "volume as Volume")
-
+    val dfStatic = MongoSpark.load(sparkSession, SparkApp.loadMongo())
+      .selectExpr("symbol as Symbol", "CompanyName", "LastPrice", "Volume")
+      
     val dfStream = sparkSession
       .readStream
       .format("kafka")
@@ -59,7 +53,7 @@ object SparkKafkaSub {
 
     val query = dfJoin
       .writeStream
-      .foreachBatch { (output: Dataset[Row], batchId: Long) => 
+      .foreachBatch { (output: Dataset[Row], batchId: Long) =>
         SparkHBaseWriter.open();
         for (r <- output.collect()) {
           SparkHBaseWriter.process(r);
