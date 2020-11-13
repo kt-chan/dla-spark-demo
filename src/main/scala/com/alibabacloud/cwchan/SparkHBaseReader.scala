@@ -22,7 +22,7 @@ object SparkHBaseReader extends App {
     val port = phoenixConfig.getString("port");
     zookeeperQuorum = phoenixConfig.getString("zookeeper");
 
-    return SparkApp.sparkSessoin
+    return SparkApp.sparkSession
   }
 
   def run(): Unit = {

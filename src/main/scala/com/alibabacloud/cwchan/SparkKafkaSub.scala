@@ -5,6 +5,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 
 import com.mongodb.spark.MongoSpark
+import com.mongodb.spark.config.ReadConfig
 import com.typesafe.config.ConfigFactory
 
 object SparkKafkaSub {
@@ -17,9 +18,9 @@ object SparkKafkaSub {
   var kafkaUsername: String = null;
   var kafkaPassword: String = null;
   var jassConfigEntity: String = null;
-
+  val config = ConfigFactory.load().getConfig("com.alibaba-inc.cwchan");
+  
   def loadConfig(): SparkSession = {
-    val config = ConfigFactory.load().getConfig("com.alibaba-inc.cwchan");
     val kafkaConfig = config.getConfig("Kafka");
     bootstrapServers = kafkaConfig.getString("bootstrapServers");
     groupId = kafkaConfig.getString("groupId");
@@ -27,17 +28,32 @@ object SparkKafkaSub {
 
     println("running kafka subscriber for " + topicName);
 
-    return SparkApp.sparkSessoin;
+    return SparkApp.sparkSession;
   }
 
+  def loadMongo(): ReadConfig = {
+
+    val mongoconfig = config.getConfig("MongoDB");
+    val uri = mongoconfig.getString("uri");
+    val db = mongoconfig.getString("db");
+    val collection = mongoconfig.getString("collection");
+
+    val readConfig = ReadConfig(
+      Map(
+        "uri" -> uri,
+        "database" -> db,
+        "collection" -> collection))
+
+    return readConfig;
+  }
 
   def run(): Unit = {
 
     val sparkSession = loadConfig();
 
-    val dfStatic = MongoSpark.load(sparkSession, SparkApp.loadMongo())
+    val dfStatic = MongoSpark.load(sparkSession, loadMongo())
       .selectExpr("symbol as Symbol", "CompanyName", "LastPrice", "Volume")
-      
+
     val dfStream = sparkSession
       .readStream
       .format("kafka")
@@ -49,7 +65,7 @@ object SparkKafkaSub {
 
     val dfJoin = dfStream
       .join(dfStatic, dfStream("StockCode") === dfStatic("Symbol"), "leftouter")
-      .selectExpr("SourceIP", "StockCode", "CompanyName", "LastPrice", "TS")
+      .selectExpr("SourceIP as ROWKEY", "StockCode as stock_code", "CompanyName as stock_name", "LastPrice as last_price", "TS as timestamp")
 
     val query = dfJoin
       .writeStream

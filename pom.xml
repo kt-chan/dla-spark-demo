@@ -43,6 +43,27 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.phoenix</groupId>
+			<artifactId>phoenix-spark</artifactId>
+			<version>${phoenix.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.phoenix</groupId>
+			<artifactId>phoenix-queryserver-client</artifactId>
+			<version>${phoenix.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>3.13.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-hive_${scala.compat.version}</artifactId>
+			<version>${spark.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.mongodb.spark</groupId>
 			<artifactId>mongo-spark-connector_${scala.compat.version}</artifactId>
 			<version>2.4.2</version>
