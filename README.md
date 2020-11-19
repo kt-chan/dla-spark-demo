@@ -1,3 +1,7 @@
+Storyline: Building a simple, intelligence, cloud native feed streaming system with Apache Kafka and Apache Spark on Alibaba Cloud
+
+https://www.linkedin.com/pulse/building-simple-intelligence-cloud-native-feed-streaming-chi-wai-chan-1c/
+
 # dla-spark-demo
  
 1. pleaes replace the credential in /src/main/template/application.conf
