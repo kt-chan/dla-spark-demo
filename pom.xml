@@ -28,19 +28,16 @@
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 			<version>${hadoop.version}</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-core_${scala.compat.version}</artifactId>
 			<version>${spark.version}</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-sql_${scala.compat.version}</artifactId>
 			<version>${spark.version}</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.phoenix</groupId>
@@ -83,7 +80,6 @@
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-mllib_${scala.compat.version}</artifactId>
 			<version>${spark.version}</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
@@ -116,7 +112,11 @@
 			<version>${hbase.version}</version>
 			<type>pom</type>
 		</dependency>
-
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>2.5.0</version>
+		</dependency>
 		<!-- Scala Compiler -->
 		<dependency>
 			<groupId>org.scala-lang</groupId>
@@ -188,6 +188,11 @@
 	</dependencies>
 
 	<build>
+		<resources>
+			<resource>
+				<directory>${basedir}/src/main/resources</directory>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -277,6 +282,12 @@
 										<X-Compile-Source-JDK>${maven.compile.source}</X-Compile-Source-JDK>
 										<X-Compile-Target-JDK>${maven.compile.target}</X-Compile-Target-JDK>
 									</manifestEntries>
+								</transformer>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+									<resource>
+										META-INF/services/org.apache.spark.sql.sources.DataSourceRegister
+									</resource>
 								</transformer>
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">

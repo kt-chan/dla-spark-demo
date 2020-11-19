@@ -26,7 +26,7 @@ object SparkApp {
     //SparkContext
     sparkSession = SparkSession
       .builder()
-      .enableHiveSupport()
+      //.enableHiveSupport()
       .config(sparkConf)
       .getOrCreate();
 
