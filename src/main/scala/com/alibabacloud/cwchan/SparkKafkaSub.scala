@@ -62,11 +62,11 @@ object SparkKafkaSub {
       .option("subscribe", topicName)
       .option("group.id", groupId)
       .load()
-      .selectExpr("CAST(key AS STRING) as SourceIP", "split(value, ',')[0] as StockCode", "split(value, ',')[1] as TS")
+      .selectExpr("CAST(key AS STRING) as SourceIP", "split(value, ',')[0] as StockCode", "CAST(split(value, ',')[1] AS long)/1000 as TS")
 
     val dfJoin = dfStream
       .join(dfStatic, dfStream("StockCode") === dfStatic("Symbol"), "leftouter")
-      .selectExpr("SourceIP as ROWKEY", "StockCode as stock_code", "CompanyName as stock_name", "LastPrice as last_price", "TS as timestamp")
+      .selectExpr("concat_ws('|', nvl(SourceIP, ''), nvl(StockCode, '')) as ROWKEY", "StockCode as stock_code", "CompanyName as stock_name", "LastPrice as last_price", "from_unixtime(TS) as timestamp")
 
     SparkHBaseWriter.open();
     
