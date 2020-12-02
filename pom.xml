@@ -21,6 +21,7 @@
 		<scala.version>2.11.12</scala.version>
 		<scala.compat.version>2.11</scala.compat.version>
 		<kafka.version>0.10.2.2</kafka.version>
+		<protobuf.version>3.14.0</protobuf.version>
 	</properties>
 
 	<dependencies>
@@ -115,7 +116,7 @@
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
-			<version>2.5.0</version>
+			<version>${protobuf.version}</version>
 		</dependency>
 		<!-- Scala Compiler -->
 		<dependency>

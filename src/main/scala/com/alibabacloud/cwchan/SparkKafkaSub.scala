@@ -80,18 +80,6 @@ object SparkKafkaSub {
 
     SparkHBaseWriter.close();
 
-    //    val query = dfJoin
-    //      .writeStream
-    //      .foreachBatch { (output: Dataset[Row], batchId: Long) =>
-    //        SparkHBaseWriter.open();
-    //        for (r <- output.collect()) {
-    //          SparkHBaseWriter.process(r);
-    //        }
-    //        SparkHBaseWriter.close();
-    //      }
-    //      .start
-    //      .awaitTermination();
-
   }
 
 }
