@@ -18,7 +18,7 @@ object SparkApp {
 
     val sparkConf: SparkConf = new SparkConf();
     sparkConf.setAppName("SparkKafkaSub");
-    
+
     if (debugMode.equalsIgnoreCase("debug")) {
       sparkConf.setMaster("local[4]");
     }
@@ -49,8 +49,16 @@ object SparkApp {
       }
     }
 
+    val threadTest = new Thread {
+      override def run {
+        // your custom behavior here
+        com.alibabacloud.cwchan.SparkHBaseWriter.testJDBC(null);
+      }
+    }
+
     if (cmd.equalsIgnoreCase("sub")) threadSub.start
     if (cmd.equalsIgnoreCase("pub")) threadPub.start
+    if (cmd.equalsIgnoreCase("test")) threadTest.start
 
   }
 }
